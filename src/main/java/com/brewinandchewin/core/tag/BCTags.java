@@ -6,6 +6,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 
 public class BCTags {
 
@@ -15,8 +16,13 @@ public class BCTags {
 	
 	// Tea Leaves
 	public static final TagKey<Item> TEA_LEAVES = modItemTag("tea_leaves");
+	public static final TagKey<Block> HOT_BLOCK = modBlockTag("hot_block");
+	public static final TagKey<Block> COLD_BLOCK = modBlockTag("cold_block");
 
 	private static TagKey<Item> modItemTag(String path) {
 		return TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation(BrewinAndChewin.MODID + ":" + path));
+	}
+	private static TagKey<Block> modBlockTag(String path) {
+		return TagKey.create(Registry.BLOCK_REGISTRY, new ResourceLocation(BrewinAndChewin.MODID + ":" + path));
 	}
 }

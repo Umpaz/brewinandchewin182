@@ -58,15 +58,11 @@ import vectorwing.farmersdelight.common.registry.ModSounds;
 import vectorwing.farmersdelight.common.utility.MathUtils;
 import vectorwing.farmersdelight.common.utility.TextUtils;
 
-public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
-{
-	public static final IntegerProperty HEAT = IntegerProperty.create("heat", 0, 25);
-	public static final IntegerProperty COLD = IntegerProperty.create("cold", 0, 25);
-
+public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 	public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
 	public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-	   public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
+	public static final BooleanProperty VERTICAL = BooleanProperty.create("vertical");
 
 	protected static final VoxelShape SHAPE_X = Block.box(1.0D, 0.0D, 0.0D, 15.0D, 16.0D, 16.0D);
 	protected static final VoxelShape SHAPE_Z = Block.box(0.0D, 0.0D, 1.0D, 16.0D, 16.0D, 15.0D);
@@ -75,25 +71,25 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	public KegBlock() {
 		super(Properties.of(Material.WOOD)
 				.strength(2.0F, 3.0F)
-				.sound(SoundType.WOOD)); 
+				.sound(SoundType.WOOD));
 		this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(VERTICAL, false).setValue(WATERLOGGED, false));
 	}
 
-	@Override 
+	@Override
 	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
 		ItemStack heldStack = player.getItemInHand(handIn);
 		if (!world.isClientSide) {
 			BlockEntity tileEntity = world.getBlockEntity(pos);
-			if (tileEntity instanceof KegBlockEntity) {
-				KegBlockEntity cookingPotEntity = (KegBlockEntity) tileEntity;
-				ItemStack servingStack = cookingPotEntity.useHeldItemOnMeal(heldStack);
+			if (tileEntity instanceof KegBlockEntity kegBlockEntity) {
+				ItemStack servingStack = kegBlockEntity.useHeldItemOnMeal(heldStack);
 				if (servingStack != ItemStack.EMPTY) {
 					if (!player.getInventory().add(servingStack)) {
 						player.drop(servingStack, false);
 					}
 					world.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
 				} else {
-					NetworkHooks.openGui((ServerPlayer) player, cookingPotEntity, pos);
+					kegBlockEntity.updateTemperature();
+					NetworkHooks.openGui((ServerPlayer) player, kegBlockEntity, pos);
 				}
 			}
 			return InteractionResult.SUCCESS;
@@ -108,11 +104,13 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 
 	@Override
 	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-		if (!state.getValue(VERTICAL) == true && (state.getValue(FACING) == Direction.SOUTH || state.getValue(FACING) == Direction.NORTH)) {
-			return SHAPE_X;
-		}
-		if (!state.getValue(VERTICAL) == true && (state.getValue(FACING) == Direction.EAST || state.getValue(FACING) == Direction.WEST)) {
-			return SHAPE_Z;
+		if (!state.getValue(VERTICAL)) {
+			if ((state.getValue(FACING) == Direction.SOUTH || state.getValue(FACING) == Direction.NORTH)) {
+				return SHAPE_X;
+			}
+			if ((state.getValue(FACING) == Direction.EAST || state.getValue(FACING) == Direction.WEST)) {
+				return SHAPE_Z;
+			}
 		}
 		return SHAPE_VERTICAL;
 	}
@@ -126,7 +124,7 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 			}
 		}
 	}*/
-	
+
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
 		Direction direction = context.getNearestLookingDirection();
@@ -143,20 +141,23 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 		if (state.getValue(WATERLOGGED)) {
 			world.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(world));
 		}
+		if (world.getBlockEntity(currentPos) instanceof KegBlockEntity blockEntity) {
+			blockEntity.updateTemperature();
+		}
 		return state;
 	}
 
 	@Override
 	public ItemStack getCloneItemStack(BlockGetter worldIn, BlockPos pos, BlockState state) {
 		ItemStack stack = super.getCloneItemStack(worldIn, pos, state);
-		KegBlockEntity cookingPotEntity = (KegBlockEntity) worldIn.getBlockEntity(pos);
-		if (cookingPotEntity != null) {
-			CompoundTag nbt = cookingPotEntity.writeMeal(new CompoundTag());
+		KegBlockEntity kegBlockEntity = (KegBlockEntity) worldIn.getBlockEntity(pos);
+		if (kegBlockEntity != null) {
+			CompoundTag nbt = kegBlockEntity.writeMeal(new CompoundTag());
 			if (!nbt.isEmpty()) {
 				stack.addTagElement("BlockEntityTag", nbt);
 			}
-			if (cookingPotEntity.hasCustomName()) {
-				stack.setHoverName(cookingPotEntity.getCustomName());
+			if (kegBlockEntity.hasCustomName()) {
+				stack.setHoverName(kegBlockEntity.getCustomName());
 			}
 		}
 		return stack;
@@ -166,10 +167,9 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
 		if (state.getBlock() != newState.getBlock()) {
 			BlockEntity tileEntity = worldIn.getBlockEntity(pos);
-			if (tileEntity instanceof KegBlockEntity) {
-				KegBlockEntity cookingPotEntity = (KegBlockEntity) tileEntity;
-				Containers.dropContents(worldIn, pos, cookingPotEntity.getDroppableInventory());
-				cookingPotEntity.grantStoredRecipeExperience(worldIn, Vec3.atCenterOf(pos));
+			if (tileEntity instanceof KegBlockEntity kegBlockEntity) {
+				Containers.dropContents(worldIn, pos, kegBlockEntity.getDroppableInventory());
+				kegBlockEntity.grantStoredRecipeExperience(worldIn, Vec3.atCenterOf(pos));
 				worldIn.updateNeighbourForOutputSignal(pos, this);
 			}
 
@@ -206,15 +206,16 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 		super.createBlockStateDefinition(builder);
-		builder.add(HEAT, COLD, FACING, VERTICAL, WATERLOGGED);
+		builder.add(FACING, VERTICAL, WATERLOGGED);
 	}
 
 	@Override
 	public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
 		if (stack.hasCustomHoverName()) {
 			BlockEntity tileEntity = worldIn.getBlockEntity(pos);
-			if (tileEntity instanceof KegBlockEntity) {
-				((KegBlockEntity) tileEntity).setCustomName(stack.getHoverName());
+			if (tileEntity instanceof KegBlockEntity kegBlockEntity) {
+				kegBlockEntity.setCustomName(stack.getHoverName());
+				kegBlockEntity.updateTemperature();
 			}
 		}
 	}
@@ -224,14 +225,14 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
 		BlockEntity tileEntity = worldIn.getBlockEntity(pos);
 		if (tileEntity instanceof KegBlockEntity) {
-			KegBlockEntity cookingPotEntity = (KegBlockEntity) tileEntity;
-			SoundEvent boilSound = !cookingPotEntity.getMeal().isEmpty()
+			KegBlockEntity kegBlockEntity = (KegBlockEntity) tileEntity;
+			SoundEvent boilSound = !kegBlockEntity.getMeal().isEmpty()
 					? ModSounds.BLOCK_COOKING_POT_BOIL_SOUP.get()
 					: ModSounds.BLOCK_COOKING_POT_BOIL.get();
 			double x = (double) pos.getX() + 0.5D;
 			double y = pos.getY();
 			double z = (double) pos.getZ() + 0.5D;
-			if (rand.nextInt(10) == 0) { 
+			if (rand.nextInt(10) == 0) {
 				worldIn.playLocalSound(x, y, z, boilSound, SoundSource.BLOCKS, 0.5F, rand.nextFloat() * 0.2F + 0.9F, false);
 			}
 		}

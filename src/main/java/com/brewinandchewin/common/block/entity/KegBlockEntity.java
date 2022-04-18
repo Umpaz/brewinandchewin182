@@ -1,5 +1,6 @@
 package com.brewinandchewin.common.block.entity;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Random;
 
@@ -12,6 +13,8 @@ import com.brewinandchewin.common.block.entity.inventory.KegItemHandler;
 import com.brewinandchewin.common.crafting.KegRecipe;
 import com.brewinandchewin.core.registry.BCBlockEntityTypes;
 
+import com.brewinandchewin.core.tag.BCTags;
+import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.core.BlockPos;
@@ -45,12 +48,12 @@ import vectorwing.farmersdelight.common.utility.ItemUtils;
 import vectorwing.farmersdelight.common.utility.TextUtils;
 
 
-public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, Nameable
-{
+public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, Nameable {
 	public static final int MEAL_DISPLAY_SLOT = 4;
 	public static final int CONTAINER_SLOT = 5;
 	public static final int OUTPUT_SLOT = 6;
 	public static final int INVENTORY_SIZE = OUTPUT_SLOT + 1;
+	public static final int TEMPERATURE_LOOKUP_RANGE = 4;
 
 	private final ItemStackHandler inventory;
 	private final LazyOptional<IItemHandler> inputHandler;
@@ -60,8 +63,10 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	private int cookTimeTotal;
 	private ItemStack mealContainerStack;
 	private Component customName;
+	private int heat;
+	private int cold;
 
-	protected final ContainerData cookingPotData;
+	protected final ContainerData kegData;
 	private final Object2IntOpenHashMap<ResourceLocation> experienceTracker;
 
 	private ResourceLocation lastRecipeID;
@@ -73,7 +78,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		this.inputHandler = LazyOptional.of(() -> new KegItemHandler(inventory, Direction.UP));
 		this.outputHandler = LazyOptional.of(() -> new KegItemHandler(inventory, Direction.DOWN));
 		this.mealContainerStack = ItemStack.EMPTY;
-		this.cookingPotData = createIntArray();
+		this.kegData = createIntArray();
 		this.experienceTracker = new Object2IntOpenHashMap<>();
 	}
 
@@ -91,6 +96,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		for (String key : compoundRecipes.getAllKeys()) {
 			experienceTracker.put(new ResourceLocation(key), compoundRecipes.getInt(key));
 		}
+		heat = compound.getInt("heat");
+		cold = compound.getInt("cold");
 	}
 
 	@Override
@@ -106,6 +113,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		CompoundTag compoundRecipes = new CompoundTag();
 		experienceTracker.forEach((recipeId, craftedAmount) -> compoundRecipes.putInt(recipeId.toString(), craftedAmount));
 		compound.put("RecipesUsed", compoundRecipes);
+		compound.putInt("heat", heat);
+		compound.putInt("cold", cold);
 	}
 
 	private CompoundTag writeItems(CompoundTag compound) {
@@ -132,38 +141,39 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 
 	// ======== BASIC FUNCTIONALITY ========
 
-	public static void cookingTick(Level level, BlockPos pos, BlockState state, KegBlockEntity cookingPot) {
+	public static void cookingTick(Level level, BlockPos pos, BlockState state, KegBlockEntity keg) {
 		boolean didInventoryChange = false;
 
-		if (cookingPot.hasInput()) {
-			Optional<KegRecipe> recipe = cookingPot.getMatchingRecipe(new RecipeWrapper(cookingPot.inventory));
-			if (recipe.isPresent() && cookingPot.canCook(recipe.get())) {
-				didInventoryChange = cookingPot.processCooking(recipe.get());
+		if (keg.hasInput()) {
+			Optional<KegRecipe> recipe = keg.getMatchingRecipe(new RecipeWrapper(keg.inventory));
+			if (recipe.isPresent() && keg.canCook(recipe.get())) {
+				didInventoryChange = keg.processCooking(recipe.get());
 			} else {
-				cookingPot.cookTime = 0;
+				keg.cookTime = 0;
 			}
-		} else if (cookingPot.cookTime > 0) {
-			cookingPot.cookTime = Mth.clamp(cookingPot.cookTime - 2, 0, cookingPot.cookTimeTotal);
+		} else if (keg.cookTime > 0) {
+			keg.cookTime = Mth.clamp(keg.cookTime - 2, 0, keg.cookTimeTotal);
 		}
 
-		ItemStack mealStack = cookingPot.getMeal();
+		ItemStack mealStack = keg.getMeal();
 		if (!mealStack.isEmpty()) {
-			if (!cookingPot.doesMealHaveContainer(mealStack)) {
-				cookingPot.moveMealToOutput();
+			if (!keg.doesMealHaveContainer(mealStack)) {
+				keg.moveMealToOutput();
 				didInventoryChange = true;
-			} else if (!cookingPot.inventory.getStackInSlot(CONTAINER_SLOT).isEmpty()) {
-				cookingPot.useStoredContainersOnMeal();
+			} else if (!keg.inventory.getStackInSlot(CONTAINER_SLOT).isEmpty()) {
+				keg.useStoredContainersOnMeal();
 				didInventoryChange = true;
 			}
 		}
 
 		if (didInventoryChange) {
-			cookingPot.inventoryChanged();
+			keg.updateTemperature();
+			keg.inventoryChanged();
 		}
 	}
 
 
-	public static void animationTick(Level level, BlockPos pos, BlockState state, KegBlockEntity cookingPot) {
+	public static void animationTick(Level level, BlockPos pos, BlockState state, KegBlockEntity keg) {
 		Random random = level.random;
 		if (random.nextFloat() < 0.2F) {
 			double x = (double) pos.getX() + 0.5D + (random.nextDouble() * 0.6D - 0.3D);
@@ -180,6 +190,19 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		}
 	}
 
+	public void updateTemperature() {
+		ArrayList<BlockState> states = new ArrayList<>();
+		int range = TEMPERATURE_LOOKUP_RANGE;
+		for (int x = -range; x <= range; x++) {
+			for (int y = -range; y <= range; y++) {
+				for (int z = -range; z <= range; z++) {
+					states.add(level.getBlockState(worldPosition.offset(x, y, z)));
+				}
+			}
+		}
+		heat = states.stream().filter(s -> s.is(BCTags.HOT_BLOCK)).mapToInt(s -> 1).sum();
+		cold = states.stream().filter(s -> s.is(BCTags.COLD_BLOCK)).mapToInt(s -> 1).sum();
+	}
 	private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
 		if (level == null) return Optional.empty();
 
@@ -406,7 +429,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 
 	@Override
 	public AbstractContainerMenu createMenu(int id, Inventory player, Player entity) {
-		return new KegContainer(id, player, this, cookingPotData);
+		return new KegContainer(id, player, this, kegData);
 	}
 
 	@Override
@@ -435,8 +458,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	}
 
 	private ItemStackHandler createHandler() {
-		return new ItemStackHandler(INVENTORY_SIZE)
-		{
+		return new ItemStackHandler(INVENTORY_SIZE) {
 			@Override
 			protected void onContentsChanged(int slot) {
 				if (slot >= 0 && slot < MEAL_DISPLAY_SLOT) {
@@ -448,29 +470,21 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	}
 
 	private ContainerData createIntArray() {
-		return new ContainerData()
-		{
+		return new ContainerData() {
 			@Override
 			public int get(int index) {
-				switch (index) {
-					case 0:
-						return KegBlockEntity.this.cookTime;
-					case 1:
-						return KegBlockEntity.this.cookTimeTotal;
-					default:
-						return 0;
-				}
+				return switch (index) {
+					case 0 -> KegBlockEntity.this.cookTime;
+					case 1 -> KegBlockEntity.this.cookTimeTotal;
+					default -> 0;
+				};
 			}
 
 			@Override
 			public void set(int index, int value) {
 				switch (index) {
-					case 0:
-						KegBlockEntity.this.cookTime = value;
-						break;
-					case 1:
-						KegBlockEntity.this.cookTimeTotal = value;
-						break;
+					case 0 -> KegBlockEntity.this.cookTime = value;
+					case 1 -> KegBlockEntity.this.cookTimeTotal = value;
 				}
 			}
 
