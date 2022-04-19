@@ -39,7 +39,17 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 	public void render(PoseStack ms, final int mouseX, final int mouseY, float partialTicks) {
 		this.renderBackground(ms);
 		super.render(ms, mouseX, mouseY, partialTicks);
+		this.renderHeatIndicatorTooltip(ms, mouseX, mouseY);
 		this.renderMealDisplayTooltip(ms, mouseX, mouseY);
+	}
+	
+	private void renderHeatIndicatorTooltip(PoseStack ms, int mouseX, int mouseY) {
+		if (this.isHovering(47, 55, 17, 15, mouseX, mouseY)) {
+			List<Component> tooltip = new ArrayList<>();
+			String key = "container.cooking_pot." + (this.menu.getHeat() < 4 ? "heated" : "not_heated");
+			tooltip.add(TextUtils.getTranslation(key, menu));
+			this.renderComponentTooltip(ms, tooltip, mouseX, mouseY);
+		}
 	}
 
 	protected void renderMealDisplayTooltip(PoseStack ms, int mouseX, int mouseY) {

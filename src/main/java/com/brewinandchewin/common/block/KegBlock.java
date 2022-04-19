@@ -184,7 +184,7 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock 
 		CompoundTag nbt = stack.getTagElement("BlockEntityTag");
 		if (nbt != null) {
 			CompoundTag inventoryTag = nbt.getCompound("Inventory");
-			if (inventoryTag.contains("Items", 7)) {
+			if (inventoryTag.contains("Items", 9)) {
 				ItemStackHandler handler = new ItemStackHandler();
 				handler.deserializeNBT(inventoryTag);
 				ItemStack mealStack = handler.getStackInSlot(5);

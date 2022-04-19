@@ -57,11 +57,13 @@ public class KegContainer extends AbstractContainerMenu
 			}
 		}
 
+		this.addSlot(new SlotItemHandler(inventory, 4, 85, 22));
+
 		// Meal Display
-		this.addSlot(new KegMealSlot(inventory, 4, 122, 23));
+		this.addSlot(new KegMealSlot(inventory, 5, 122, 23));
 
 		// Bowl Input
-		this.addSlot(new SlotItemHandler(inventory, 5, 90, 55)
+		this.addSlot(new SlotItemHandler(inventory, 6, 90, 55)
 		{
 			@OnlyIn(Dist.CLIENT)
 			public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
@@ -70,7 +72,8 @@ public class KegContainer extends AbstractContainerMenu
 		});
 
 		// Bowl Output
-		this.addSlot(new KegResultSlot(playerInventory.player, tileEntity, inventory, 6, 122, 55));
+		this.addSlot(new KegResultSlot(playerInventory.player, tileEntity, inventory, 7, 122, 55));
+
 
 		// Main Player Inventory
 		int startPlayerInvY = startY * 4 + 12;
@@ -110,9 +113,9 @@ public class KegContainer extends AbstractContainerMenu
 
 	@Override
 	public ItemStack quickMoveStack(Player playerIn, int index) {
-		int indexMealDisplay = 4;
-		int indexContainerInput = 5;
-		int indexOutput = 6;
+		int indexMealDisplay = 5;
+		int indexContainerInput = 6;
+		int indexOutput = 7;
 		int startPlayerInv = indexOutput + 1;
 		int endPlayerInv = startPlayerInv + 36;
 		ItemStack itemstack = ItemStack.EMPTY;
@@ -156,5 +159,10 @@ public class KegContainer extends AbstractContainerMenu
 		int i = this.cookingPotData.get(0);
 		int j = this.cookingPotData.get(1);
 		return j != 0 && i != 0 ? i * 33 / j : 0;
+	}
+	
+	@OnlyIn(Dist.CLIENT)
+	public int getHeat() {
+		return this.tileEntity.heat;
 	}
 }

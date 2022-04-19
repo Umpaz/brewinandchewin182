@@ -12,9 +12,8 @@ import com.brewinandchewin.common.block.entity.container.KegContainer;
 import com.brewinandchewin.common.block.entity.inventory.KegItemHandler;
 import com.brewinandchewin.common.crafting.KegRecipe;
 import com.brewinandchewin.core.registry.BCBlockEntityTypes;
-
 import com.brewinandchewin.core.tag.BCTags;
-import it.unimi.dsi.fastutil.Pair;
+
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.core.BlockPos;
@@ -49,9 +48,10 @@ import vectorwing.farmersdelight.common.utility.TextUtils;
 
 
 public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, Nameable {
-	public static final int MEAL_DISPLAY_SLOT = 4;
-	public static final int CONTAINER_SLOT = 5;
-	public static final int OUTPUT_SLOT = 6;
+	public static final int LIQUID_SLOT = 4;
+	public static final int MEAL_DISPLAY_SLOT = 5;
+	public static final int CONTAINER_SLOT = 6;
+	public static final int OUTPUT_SLOT = 7;
 	public static final int INVENTORY_SIZE = OUTPUT_SLOT + 1;
 	public static final int TEMPERATURE_LOOKUP_RANGE = 4;
 
@@ -63,8 +63,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	private int cookTimeTotal;
 	private ItemStack mealContainerStack;
 	private Component customName;
-	private int heat;
-	private int cold;
+	public int heat;
+	public int cold;
 
 	protected final ContainerData kegData;
 	private final Object2IntOpenHashMap<ResourceLocation> experienceTracker;
@@ -96,8 +96,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		for (String key : compoundRecipes.getAllKeys()) {
 			experienceTracker.put(new ResourceLocation(key), compoundRecipes.getInt(key));
 		}
-		heat = compound.getInt("heat");
-		cold = compound.getInt("cold");
+		heat = compound.getInt("Heat");
+		cold = compound.getInt("Cold");
 	}
 
 	@Override
@@ -113,8 +113,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		CompoundTag compoundRecipes = new CompoundTag();
 		experienceTracker.forEach((recipeId, craftedAmount) -> compoundRecipes.putInt(recipeId.toString(), craftedAmount));
 		compound.put("RecipesUsed", compoundRecipes);
-		compound.putInt("heat", heat);
-		compound.putInt("cold", cold);
+		compound.putInt("Heat", heat);
+		compound.putInt("Cold", cold);
 	}
 
 	private CompoundTag writeItems(CompoundTag compound) {
@@ -203,6 +203,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		heat = states.stream().filter(s -> s.is(BCTags.HOT_BLOCK)).mapToInt(s -> 1).sum();
 		cold = states.stream().filter(s -> s.is(BCTags.COLD_BLOCK)).mapToInt(s -> 1).sum();
 	}
+	
 	private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
 		if (level == null) return Optional.empty();
 

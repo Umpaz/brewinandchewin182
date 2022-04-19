@@ -10,8 +10,9 @@ import net.minecraftforge.items.IItemHandler;
 public class KegItemHandler implements IItemHandler
 {
 	private static final int SLOTS_INPUT = 4;
-	private static final int SLOT_CONTAINER_INPUT = 5;
-	private static final int SLOT_MEAL_OUTPUT = 6;
+	private static final int SLOT_LIQUID_INPUT = 5;
+	private static final int SLOT_CONTAINER_INPUT = 6;
+	private static final int SLOT_MEAL_OUTPUT = 7;
 	private final IItemHandler itemHandler;
 	private final Direction side;
 
