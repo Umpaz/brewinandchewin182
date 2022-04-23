@@ -24,7 +24,11 @@ import vectorwing.farmersdelight.common.utility.TextUtils;
 public class KegScreen extends AbstractContainerScreen<KegContainer>
 {
 	private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation(BrewinAndChewin.MODID, "textures/gui/keg.png");
-	private static final Rectangle PROGRESS_ARROW = new Rectangle(76, 42, 0, 5);
+	private static final Rectangle PROGRESS_ARROW = new Rectangle(77, 44, 0, 9);
+	private static final Rectangle FRIGID_BAR = new Rectangle(77, 39, 6, 4);
+	private static final Rectangle COLD_BAR = new Rectangle(83, 39, 7, 4);
+	private static final Rectangle WARM_BAR = new Rectangle(96, 39, 7, 4);
+	private static final Rectangle HOT_BAR = new Rectangle(103, 39, 7, 4);
 
 	public KegScreen(KegContainer screenContainer, Inventory inv, Component titleIn) {
 		super(screenContainer, inv, titleIn);
@@ -39,14 +43,14 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 	public void render(PoseStack ms, final int mouseX, final int mouseY, float partialTicks) {
 		this.renderBackground(ms);
 		super.render(ms, mouseX, mouseY, partialTicks);
-		this.renderHeatIndicatorTooltip(ms, mouseX, mouseY);
+		this.renderTemperatureTooltip(ms, mouseX, mouseY);
 		this.renderMealDisplayTooltip(ms, mouseX, mouseY);
 	}
 	
-	private void renderHeatIndicatorTooltip(PoseStack ms, int mouseX, int mouseY) {
-		if (this.isHovering(47, 55, 17, 15, mouseX, mouseY)) {
+	private void renderTemperatureTooltip(PoseStack ms, int mouseX, int mouseY) {
+		if (this.isHovering(77, 39, 27, 4, mouseX, mouseY)) {
 			List<Component> tooltip = new ArrayList<>();
-			String key = "container.cooking_pot." + (this.menu.getHeat() < 4 ? "heated" : "not_heated");
+			String key = "container.cooking_pot." + (this.menu.getTemperature() > -1 ? "heated" : "not_heated");
 			tooltip.add(TextUtils.getTranslation(key, menu));
 			this.renderComponentTooltip(ms, tooltip, mouseX, mouseY);
 		}
@@ -54,7 +58,7 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 
 	protected void renderMealDisplayTooltip(PoseStack ms, int mouseX, int mouseY) {
 		if (this.minecraft != null && this.minecraft.player != null && this.menu.getCarried().isEmpty() && this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
-			if (this.hoveredSlot.index == 4) {
+			if (this.hoveredSlot.index == 5) {
 				List<Component> tooltip = new ArrayList<>();
 
 				ItemStack mealStack = this.hoveredSlot.getItem();
@@ -91,6 +95,20 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 
 		// Render progress arrow
 		int l = this.menu.getCookProgressionScaled();
-		this.blit(ms, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 0, l + 1, PROGRESS_ARROW.height);
+		this.blit(ms, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
+		
+		int temp = this.menu.getTemperature();
+		if (temp < -4 && temp > -9) {
+			this.blit(ms, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
+		}
+		if (temp < -8) {
+			this.blit(ms, this.leftPos + FRIGID_BAR.x, this.topPos + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
+		}
+		if (temp > 4 && temp < 9) {
+			this.blit(ms, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
+		}
+		if (temp > 8) {
+			this.blit(ms, this.leftPos + HOT_BAR.x, this.topPos + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
+		}
 	}
 }

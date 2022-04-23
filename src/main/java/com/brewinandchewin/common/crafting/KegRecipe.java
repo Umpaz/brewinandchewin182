@@ -16,13 +16,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.UpgradeRecipe;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.EnchantmentTableBlock;
-import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
-import net.minecraft.world.level.block.entity.EnchantmentTableBlockEntity;
-import net.minecraftforge.common.brewing.BrewingRecipe;
-import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 import net.minecraftforge.registries.ForgeRegistryEntry;
@@ -37,17 +31,17 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 	private final String group;
 	private final NonNullList<Ingredient> inputItems;
 	private final ItemStack output;
-	private final ItemStack liquid;
 	private final ItemStack container;
 	private final float experience;
 	private final int cookTime;
+	final Ingredient liquid;
 
-	public KegRecipe(ResourceLocation id, String group, NonNullList<Ingredient> inputItems, ItemStack liquid, ItemStack output, ItemStack container, float experience, int cookTime) {
+	public KegRecipe(ResourceLocation id, String group, NonNullList<Ingredient> inputItems, Ingredient liquid, ItemStack output, ItemStack container, float experience, int cookTime) {
 		this.id = id;
 		this.group = group;
 		this.inputItems = inputItems;
 		this.output = output;
-		this.liquid = liquid;
+	    this.liquid = liquid;
 
 		if (!container.isEmpty()) {
 			this.container = container;
@@ -85,10 +79,6 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 	public ItemStack getResultItem() {
 		return this.output;
 	}
-	
-	public ItemStack getLiquid() {
-		return this.liquid;
-	}
 
 	public ItemStack getOutputContainer() {
 		return this.container;
@@ -119,7 +109,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 				inputs.add(itemstack);
 			}
 		}
-		return i == this.inputItems.size() && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null;
+		return i == this.inputItems.size() && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null && this.liquid.test(inv.getItem(4)); 
 	}
 
 	@Override
@@ -153,11 +143,11 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 				throw new JsonParseException("Too many ingredients for cooking recipe! The max is " + KegRecipe.INPUT_SLOTS);
 			} else {
 				final ItemStack outputIn = CraftingHelper.getItemStack(GsonHelper.getAsJsonObject(json, "result"), true);
-				ItemStack liquid = GsonHelper.isValidNode(json, "liquid") ? CraftingHelper.getItemStack(GsonHelper.getAsJsonObject(json, "liquid"), true) : ItemStack.EMPTY;
+				Ingredient liquid = Ingredient.fromJson(GsonHelper.getAsJsonObject(json, "liquid"));
 				ItemStack container = GsonHelper.isValidNode(json, "container") ? CraftingHelper.getItemStack(GsonHelper.getAsJsonObject(json, "container"), true) : ItemStack.EMPTY;
 				final float experienceIn = GsonHelper.getAsFloat(json, "experience", 0.0F);
 				final int cookTimeIn = GsonHelper.getAsInt(json, "cookingtime", 200);
-				return new KegRecipe(recipeId, groupIn, inputItemsIn, outputIn, liquid, container, experienceIn, cookTimeIn);
+				return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, container, experienceIn, cookTimeIn);
 			}
 		}
 
@@ -186,11 +176,11 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 			}
 
 			ItemStack outputIn = buffer.readItem();
-			ItemStack liquid = buffer.readItem();
+			Ingredient liquid = Ingredient.fromNetwork(buffer);
 			ItemStack container = buffer.readItem();
 			float experienceIn = buffer.readFloat();
 			int cookTimeIn = buffer.readVarInt();
-			return new KegRecipe(recipeId, groupIn, inputItemsIn, outputIn, liquid, container, experienceIn, cookTimeIn);
+			return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, container, experienceIn, cookTimeIn);
 		}
 
 		@Override
@@ -203,7 +193,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 			}
 
 			buffer.writeItem(recipe.output);
-			buffer.writeItem(recipe.liquid);
+			recipe.liquid.toNetwork(buffer);
 			buffer.writeItem(recipe.container);
 			buffer.writeFloat(recipe.experience);
 			buffer.writeVarInt(recipe.cookTime);

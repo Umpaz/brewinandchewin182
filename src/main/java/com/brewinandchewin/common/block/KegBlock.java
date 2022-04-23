@@ -81,6 +81,7 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock 
 		if (!world.isClientSide) {
 			BlockEntity tileEntity = world.getBlockEntity(pos);
 			if (tileEntity instanceof KegBlockEntity kegBlockEntity) {
+				kegBlockEntity.updateTemperature();
 				ItemStack servingStack = kegBlockEntity.useHeldItemOnMeal(heldStack);
 				if (servingStack != ItemStack.EMPTY) {
 					if (!player.getInventory().add(servingStack)) {
@@ -88,7 +89,6 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock 
 					}
 					world.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
 				} else {
-					kegBlockEntity.updateTemperature();
 					NetworkHooks.openGui((ServerPlayer) player, kegBlockEntity, pos);
 				}
 			}
@@ -115,15 +115,13 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock 
 		return SHAPE_VERTICAL;
 	}
 
-	/*@Override
+	@Override
 	public void neighborChanged(BlockState state, Level level, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-		for (BlockPos neighborPos : BlockPos.betweenClosed(pos.offset(-1, -1, -1), pos.offset(1, 1, 1))) {
-			BlockState stateBelow = level.getBlockState(neighborPos);
-			if (stateBelow.is(ModTags.HEAT_SOURCES)) {
-				
-			}
+		BlockEntity tileEntity = level.getBlockEntity(pos);
+		if (tileEntity instanceof KegBlockEntity kegBlockEntity) {
+			kegBlockEntity.updateTemperature();
 		}
-	}*/
+	}
 
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
@@ -184,7 +182,7 @@ public class KegBlock extends BaseEntityBlock implements SimpleWaterloggedBlock 
 		CompoundTag nbt = stack.getTagElement("BlockEntityTag");
 		if (nbt != null) {
 			CompoundTag inventoryTag = nbt.getCompound("Inventory");
-			if (inventoryTag.contains("Items", 9)) {
+			if (inventoryTag.contains("Items", 7)) {
 				ItemStackHandler handler = new ItemStackHandler();
 				handler.deserializeNBT(inventoryTag);
 				ItemStack mealStack = handler.getStackInSlot(5);

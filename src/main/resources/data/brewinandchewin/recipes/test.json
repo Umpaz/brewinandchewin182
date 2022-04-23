@@ -14,6 +14,12 @@
   "result": {
     "item": "farmersdelight:apple_cider"
   },
+  "container": {
+    "item": "minecraft:bowl"
+  },
+  "liquid": {
+    "item": "minecraft:milk_bucket"
+  },
   "experience": 0.35,
   "cookingtime": 200
 }

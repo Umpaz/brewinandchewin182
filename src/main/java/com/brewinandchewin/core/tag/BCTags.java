@@ -16,8 +16,9 @@ public class BCTags {
 	
 	// Tea Leaves
 	public static final TagKey<Item> TEA_LEAVES = modItemTag("tea_leaves");
-	public static final TagKey<Block> HOT_BLOCK = modBlockTag("hot_block");
-	public static final TagKey<Block> COLD_BLOCK = modBlockTag("cold_block");
+	
+	public static final TagKey<Block> HOT_BLOCK = modBlockTag("hot_blocks");
+	public static final TagKey<Block> COLD_BLOCK = modBlockTag("cold_blocks");
 
 	private static TagKey<Item> modItemTag(String path) {
 		return TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation(BrewinAndChewin.MODID + ":" + path));
