@@ -119,7 +119,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	}
 
 	private CompoundTag writeItems(CompoundTag compound) {
-		super.saveAdditional(compound);
+		saveAdditional(compound);
 		compound.put("Container", mealContainerStack.serializeNBT());
 		compound.put("Inventory", inventory.serializeNBT());
 		return compound;
@@ -201,10 +201,12 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 				}
 			}
 		}
-		heat = 0;
-		cold = 0;
 		heat = states.stream().filter(s -> s.is(BCTags.HOT_BLOCK)).mapToInt(s -> 1).sum();
 		cold = states.stream().filter(s -> s.is(BCTags.COLD_BLOCK)).mapToInt(s -> 1).sum();
+
+		level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+		level.blockEntityChanged(worldPosition);
+		level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
 	}
 	
 	private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
