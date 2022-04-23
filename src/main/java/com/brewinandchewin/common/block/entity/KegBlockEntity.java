@@ -62,6 +62,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	private int cookTime;
 	private int cookTimeTotal;
 	private ItemStack mealContainerStack;
+	private ItemStack liquidContainerStack;
 	private Component customName;
 	public int heat;
 	public int cold;
@@ -78,6 +79,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		this.inputHandler = LazyOptional.of(() -> new KegItemHandler(inventory, Direction.UP));
 		this.outputHandler = LazyOptional.of(() -> new KegItemHandler(inventory, Direction.DOWN));
 		this.mealContainerStack = ItemStack.EMPTY;
+		this.liquidContainerStack = ItemStack.EMPTY;
 		this.kegData = createIntArray();
 		this.experienceTracker = new Object2IntOpenHashMap<>();
 	}
@@ -89,6 +91,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		cookTime = compound.getInt("CookTime");
 		cookTimeTotal = compound.getInt("CookTimeTotal");
 		mealContainerStack = ItemStack.of(compound.getCompound("Container"));
+		liquidContainerStack = ItemStack.of(compound.getCompound("Liquid"));
 		if (compound.contains("CustomName", 8)) {
 			customName = Component.Serializer.fromJson(compound.getString("CustomName"));
 		}
@@ -106,6 +109,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		compound.putInt("CookTime", cookTime);
 		compound.putInt("CookTimeTotal", cookTimeTotal);
 		compound.put("Container", mealContainerStack.serializeNBT());
+		compound.put("Liquid", liquidContainerStack.serializeNBT());
 		if (customName != null) {
 			compound.putString("CustomName", Component.Serializer.toJson(customName));
 		}
@@ -120,6 +124,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	private CompoundTag writeItems(CompoundTag compound) {
 		super.saveAdditional(compound);
 		compound.put("Container", mealContainerStack.serializeNBT());
+		compound.put("Liquid", liquidContainerStack.serializeNBT());
 		compound.put("Inventory", inventory.serializeNBT());
 		return compound;
 	}
@@ -135,6 +140,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 			compound.putString("CustomName", Component.Serializer.toJson(customName));
 		}
 		compound.put("Container", mealContainerStack.serializeNBT());
+		compound.put("Liquid", liquidContainerStack.serializeNBT());
 		compound.put("Inventory", drops.serializeNBT());
 		return compound;
 	}
@@ -281,6 +287,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 
 		cookTime = 0;
 		mealContainerStack = recipe.getOutputContainer();
+		liquidContainerStack = recipe.getLiquid();
 		ItemStack resultStack = recipe.getResultItem();
 		ItemStack storedMealStack = inventory.getStackInSlot(MEAL_DISPLAY_SLOT);
 		if (storedMealStack.isEmpty()) {

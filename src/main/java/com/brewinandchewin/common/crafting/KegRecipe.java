@@ -119,7 +119,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 				inputs.add(itemstack);
 			}
 		}
-		return i == this.inputItems.size() && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null;
+		return i == this.inputItems.size() && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null && net.minecraftforge.common.util.RecipeMatcher.findMatches(inputs, this.inputItems) != null;
 	}
 
 	@Override
