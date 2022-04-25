@@ -12,15 +12,11 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = BrewinAndChewin.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class BCClientSetupEvents
 {
-	public static final ResourceLocation EMPTY_CONTAINER_SLOT_BOWL = new ResourceLocation(BrewinAndChewin.MODID, "item/empty_container_slot_bowl");
+	public static final ResourceLocation EMPTY_CONTAINER_SLOT_MUG = new ResourceLocation(BrewinAndChewin.MODID, "item/empty_container_slot_mug");
 
 	
 	@SubscribeEvent
-	public static void onStitchEvent(TextureStitchEvent.Pre event) {
-		ResourceLocation stitching = event.getAtlas().location();
-		if (!stitching.equals(TextureAtlas.LOCATION_BLOCKS)) {
-			return;
-		}
-		event.addSprite(EMPTY_CONTAINER_SLOT_BOWL);
+	public static void onStitchEvent(TextureStitchEvent.Pre event) {		
+		event.addSprite(EMPTY_CONTAINER_SLOT_MUG);
 	}
 }

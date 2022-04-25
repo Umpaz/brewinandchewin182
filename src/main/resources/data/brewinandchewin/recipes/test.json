@@ -1,11 +1,14 @@
 {
-  "type": "brewinandchewin:cooking",
+  "type": "brewinandchewin:fermenting",
   "ingredients": [
     {
       "item": "minecraft:apple"
     },
     {
       "item": "minecraft:apple"
+    },
+    {
+      "item": "minecraft:sugar"
     },
     {
       "item": "minecraft:sugar"
@@ -20,6 +23,7 @@
   "liquid": {
     "item": "minecraft:milk_bucket"
   },
+  "temperature": 1,
   "experience": 0.35,
   "cookingtime": 200
 }

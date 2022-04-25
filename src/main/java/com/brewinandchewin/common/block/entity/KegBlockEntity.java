@@ -11,13 +11,13 @@ import com.brewinandchewin.common.block.KegBlock;
 import com.brewinandchewin.common.block.entity.container.KegContainer;
 import com.brewinandchewin.common.block.entity.inventory.KegItemHandler;
 import com.brewinandchewin.common.crafting.KegRecipe;
+import com.brewinandchewin.common.crafting.KegRecipe.Range;
 import com.brewinandchewin.core.registry.BCBlockEntityTypes;
-
 import com.brewinandchewin.core.tag.BCTags;
-import it.unimi.dsi.fastutil.Pair;
+import com.brewinandchewin.core.utility.BCTextUtils;
+
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -31,6 +31,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
@@ -46,7 +47,6 @@ import net.minecraftforge.items.wrapper.RecipeWrapper;
 import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
 import vectorwing.farmersdelight.common.mixin.accessor.RecipeManagerAccessor;
 import vectorwing.farmersdelight.common.utility.ItemUtils;
-import vectorwing.farmersdelight.common.utility.TextUtils;
 
 
 public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, Nameable {
@@ -97,8 +97,8 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		for (String key : compoundRecipes.getAllKeys()) {
 			experienceTracker.put(new ResourceLocation(key), compoundRecipes.getInt(key));
 		}
-		heat = compound.getInt("heat");
-		cold = compound.getInt("cold");
+		heat = compound.getInt("Heat");
+		cold = compound.getInt("Cold");
 	}
 
 	@Override
@@ -114,12 +114,12 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 		CompoundTag compoundRecipes = new CompoundTag();
 		experienceTracker.forEach((recipeId, craftedAmount) -> compoundRecipes.putInt(recipeId.toString(), craftedAmount));
 		compound.put("RecipesUsed", compoundRecipes);
-		compound.putInt("heat", heat);
-		compound.putInt("cold", cold);
+		compound.putInt("Heat", heat);
+		compound.putInt("Cold", cold);
 	}
 
 	private CompoundTag writeItems(CompoundTag compound) {
-		super.saveAdditional(compound);
+		saveAdditional(compound);
 		compound.put("Container", mealContainerStack.serializeNBT());
 		compound.put("Inventory", inventory.serializeNBT());
 		return compound;
@@ -190,6 +190,11 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 			//level.addParticle(ModParticleTypes.STEAM.get(), x, y, z, 0.0D, motionY, 0.0D);
 		}
 	}
+	
+	public boolean isHeat() {
+		return heat > 4;
+	}
+	
 
 	public void updateTemperature() {
 		ArrayList<BlockState> states = new ArrayList<>();
@@ -201,10 +206,12 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 				}
 			}
 		}
-		heat = 0;
-		cold = 0;
 		heat = states.stream().filter(s -> s.is(BCTags.HOT_BLOCK)).mapToInt(s -> 1).sum();
 		cold = states.stream().filter(s -> s.is(BCTags.COLD_BLOCK)).mapToInt(s -> 1).sum();
+		
+		level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+		level.blockEntityChanged(worldPosition);
+		level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
 	}
 	
 	private Optional<KegRecipe> getMatchingRecipe(RecipeWrapper inventoryWrapper) {
@@ -252,7 +259,9 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 	}
 
 	protected boolean canCook(KegRecipe recipe) {
-		if (hasInput()) {
+		Range i = recipe.getTemperature();
+		
+		if (hasInput() && i.contains(heat - cold)) {
 			ItemStack resultStack = recipe.getResultItem();
 			if (resultStack.isEmpty()) {
 				return false;
@@ -413,7 +422,7 @@ public class KegBlockEntity extends SyncedBlockEntity implements MenuProvider, N
 
 	@Override
 	public Component getName() {
-		return customName != null ? customName : TextUtils.getTranslation("container.cooking_pot");
+		return customName != null ? customName : BCTextUtils.getTranslation("container.keg");
 	}
 
 	@Override

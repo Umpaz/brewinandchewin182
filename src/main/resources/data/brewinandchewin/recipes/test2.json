@@ -1,0 +1,26 @@
+{
+  "type": "brewinandchewin:fermenting",
+  "ingredients": [
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:apple"
+    },
+    {
+      "item": "minecraft:cobblestone"
+    }
+  ],
+  "result": {
+    "item": "minecraft:stone"
+  },
+  "container": {
+    "item": "minecraft:glass_bottle"
+  },
+  "liquid": {
+    "item": "minecraft:honey_bottle"
+  },
+  "temperature": 3,
+  "experience": 0.35,
+  "cookingtime": 200
+}

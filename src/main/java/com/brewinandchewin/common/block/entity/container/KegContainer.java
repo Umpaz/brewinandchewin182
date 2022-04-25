@@ -29,7 +29,7 @@ import net.minecraftforge.items.SlotItemHandler;
 
 public class KegContainer extends AbstractContainerMenu
 {
-	public static final ResourceLocation EMPTY_CONTAINER_SLOT_BOWL = new ResourceLocation(BrewinAndChewin.MODID, "item/empty_container_slot_bowl");
+	public static final ResourceLocation EMPTY_CONTAINER_SLOT_MUG = new ResourceLocation(BrewinAndChewin.MODID, "item/empty_container_slot_mug");
 
 	public final KegBlockEntity tileEntity;
 	public final ItemStackHandler inventory;
@@ -56,7 +56,7 @@ public class KegContainer extends AbstractContainerMenu
 						inputStartY + (row * borderSlotSize)));
 			}
 		}
-		this.addSlot(new SlotItemHandler(inventory, 4, 85, 19));
+		this.addSlot(new SlotItemHandler(inventory, 4, 85, 18));
 
 		// Meal Display
 		this.addSlot(new KegMealSlot(inventory, 5, 122, 23));
@@ -66,7 +66,7 @@ public class KegContainer extends AbstractContainerMenu
 		{
 			@OnlyIn(Dist.CLIENT)
 			public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-				return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_CONTAINER_SLOT_BOWL);
+				return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_CONTAINER_SLOT_MUG);
 			}
 		});
 
@@ -150,6 +150,10 @@ public class KegContainer extends AbstractContainerMenu
 			slot.onTake(playerIn, itemstack1);
 		}
 		return itemstack;
+	}
+	
+	public int getFermentingTicks() {
+		return this.cookingPotData.get(0);
 	}
 
 	@OnlyIn(Dist.CLIENT)

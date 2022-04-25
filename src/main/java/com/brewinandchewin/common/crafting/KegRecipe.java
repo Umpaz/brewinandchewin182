@@ -23,7 +23,7 @@ import net.minecraftforge.registries.ForgeRegistryEntry;
 
 public class KegRecipe implements Recipe<RecipeWrapper>
 {
-	public static RecipeType<KegRecipe> TYPE = RecipeType.register(BrewinAndChewin.MODID + ":cooking");
+	public static RecipeType<KegRecipe> TYPE = RecipeType.register(BrewinAndChewin.MODID + ":fermenting");
 	public static final Serializer SERIALIZER = new Serializer();
 	public static final int INPUT_SLOTS = 4;
 
@@ -35,14 +35,16 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 	private final float experience;
 	private final int cookTime;
 	final Ingredient liquid;
+	private final int temperature;
 
-	public KegRecipe(ResourceLocation id, String group, NonNullList<Ingredient> inputItems, Ingredient liquid, ItemStack output, ItemStack container, float experience, int cookTime) {
+	public KegRecipe(ResourceLocation id, String group, NonNullList<Ingredient> inputItems, Ingredient liquid, ItemStack output, int temperature, ItemStack container, float experience, int cookTime) {
 		this.id = id;
 		this.group = group;
 		this.inputItems = inputItems;
 		this.output = output;
 	    this.liquid = liquid;
-
+	    this.temperature = temperature;
+	    
 		if (!container.isEmpty()) {
 			this.container = container;
 		} else if (!output.getContainerItem().isEmpty()) {
@@ -74,7 +76,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 	public NonNullList<Ingredient> getIngredients() {
 		return this.inputItems;
 	}
-
+	
 	@Override
 	public ItemStack getResultItem() {
 		return this.output;
@@ -82,6 +84,10 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 
 	public ItemStack getOutputContainer() {
 		return this.container;
+	}
+	
+	public Ingredient getLiquid() {
+		return this.liquid;
 	}
 
 	@Override
@@ -95,6 +101,50 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 
 	public int getCookTime() {
 		return this.cookTime;
+	}
+	
+	public class Range
+	{
+	    private int low;
+	    private int high;
+
+	    public Range(int low, int high){
+	        this.low = low;
+	        this.high = high;
+	    }
+
+	    public boolean contains(int number){
+	        return (number >= low && number <= high);
+	    }
+	}
+	
+	public Range getTemperature() {
+		int temperature = this.temperature;
+		Range frigid = new Range(-27, -9);
+		Range cold = new Range(-8, -5);
+		Range normal = new Range(-4, 4);
+		Range warm = new Range(5, 8);
+		Range hot = new Range(9, 27);
+		if (temperature == 1) {
+			return frigid;
+		}
+		if (temperature == 2) {
+			return cold;
+		}
+		if (temperature == 3) {
+			return normal;
+		}
+		if (temperature == 4) {
+			return warm;
+		}
+		if (temperature == 5) {
+			return hot;
+		}
+		return normal;
+	}
+	
+	public int getTemperatureJei() {
+		return this.temperature;
 	}
 
 	@Override
@@ -130,7 +180,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 	private static class Serializer extends ForgeRegistryEntry<RecipeSerializer<?>> implements RecipeSerializer<KegRecipe>
 	{
 		Serializer() {
-			this.setRegistryName(new ResourceLocation(BrewinAndChewin.MODID, "cooking"));
+			this.setRegistryName(new ResourceLocation(BrewinAndChewin.MODID, "fermenting"));
 		}
 
 		@Override
@@ -147,7 +197,8 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 				ItemStack container = GsonHelper.isValidNode(json, "container") ? CraftingHelper.getItemStack(GsonHelper.getAsJsonObject(json, "container"), true) : ItemStack.EMPTY;
 				final float experienceIn = GsonHelper.getAsFloat(json, "experience", 0.0F);
 				final int cookTimeIn = GsonHelper.getAsInt(json, "cookingtime", 200);
-				return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, container, experienceIn, cookTimeIn);
+				final int temperatureIn = GsonHelper.getAsInt(json, "temperature", 3);
+				return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, temperatureIn, container, experienceIn, cookTimeIn);
 			}
 		}
 
@@ -180,7 +231,8 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 			ItemStack container = buffer.readItem();
 			float experienceIn = buffer.readFloat();
 			int cookTimeIn = buffer.readVarInt();
-			return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, container, experienceIn, cookTimeIn);
+			int temperatureIn = buffer.readVarInt();
+			return new KegRecipe(recipeId, groupIn, inputItemsIn, liquid, outputIn, temperatureIn, container, experienceIn, cookTimeIn);
 		}
 
 		@Override
@@ -197,6 +249,7 @@ public class KegRecipe implements Recipe<RecipeWrapper>
 			buffer.writeItem(recipe.container);
 			buffer.writeFloat(recipe.experience);
 			buffer.writeVarInt(recipe.cookTime);
+			buffer.writeVarInt(recipe.temperature);
 		}
 	}
 }

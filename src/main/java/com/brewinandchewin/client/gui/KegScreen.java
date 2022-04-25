@@ -8,6 +8,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.brewinandchewin.common.block.entity.container.KegContainer;
 import com.brewinandchewin.core.BrewinAndChewin;
+import com.brewinandchewin.core.utility.BCTextUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -18,7 +19,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import vectorwing.farmersdelight.common.utility.TextUtils;
 
 @ParametersAreNonnullByDefault
 public class KegScreen extends AbstractContainerScreen<KegContainer>
@@ -30,13 +30,18 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 	private static final Rectangle WARM_BAR = new Rectangle(96, 39, 7, 4);
 	private static final Rectangle HOT_BAR = new Rectangle(103, 39, 7, 4);
 
+	private static final Rectangle BUBBLE_1 = new Rectangle(74, 14, 9, 24);
+	private static final Rectangle BUBBLE_2 = new Rectangle(103, 14, 9, 24);
+	private static final int[] BUBBLELENGTHS = new int[]{24, 20, 16, 12, 8, 4, 0};
+
 	public KegScreen(KegContainer screenContainer, Inventory inv, Component titleIn) {
 		super(screenContainer, inv, titleIn);
 		this.leftPos = 0;
 		this.topPos = 0;
 		this.imageWidth = 176;
 		this.imageHeight = 166;
-		this.titleLabelX = 28;
+		this.titleLabelX = 32;
+		this.titleLabelY = 17;
 	}
 
 	@Override
@@ -50,8 +55,24 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 	private void renderTemperatureTooltip(PoseStack ms, int mouseX, int mouseY) {
 		if (this.isHovering(77, 39, 27, 4, mouseX, mouseY)) {
 			List<Component> tooltip = new ArrayList<>();
-			String key = "container.cooking_pot." + (this.menu.getTemperature() > -1 ? "heated" : "not_heated");
-			tooltip.add(TextUtils.getTranslation(key, menu));
+			MutableComponent key = null;
+			int i = this.menu.getTemperature();
+			if (i < -8) {
+				key = BCTextUtils.getTranslation("container.keg.frigid");
+			}
+			if (i < -4 && i > -9) {
+				key = BCTextUtils.getTranslation("container.keg.cold");
+			}
+			if (i < 5 && i > -5) {
+				key = BCTextUtils.getTranslation("container.keg.normal");
+			}
+			if (i > 4 && i < 9) {
+				key = BCTextUtils.getTranslation("container.keg.warm");
+			}
+			if (i > 8) {
+				key = BCTextUtils.getTranslation("container.keg.hot");
+			}
+			tooltip.add(key);
 			this.renderComponentTooltip(ms, tooltip, mouseX, mouseY);
 		}
 	}
@@ -67,7 +88,7 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 				ItemStack containerStack = this.menu.tileEntity.getContainer();
 				String container = !containerStack.isEmpty() ? containerStack.getItem().getDescription().getString() : "";
 
-				tooltip.add(TextUtils.getTranslation("container.cooking_pot.served_on", container).withStyle(ChatFormatting.GRAY));
+				tooltip.add(BCTextUtils.getTranslation("container.cooking_pot.served_on", container).withStyle(ChatFormatting.GRAY));
 
 				this.renderComponentTooltip(ms, tooltip, mouseX, mouseY);
 			} else {
@@ -88,11 +109,11 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 		RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 		if (this.minecraft == null)
 			return;
-
+		
 		RenderSystem.setShaderTexture(0, BACKGROUND_TEXTURE);
 		this.blit(ms, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
-
-
+		
+		
 		// Render progress arrow
 		int l = this.menu.getCookProgressionScaled();
 		this.blit(ms, this.leftPos + PROGRESS_ARROW.x, this.topPos + PROGRESS_ARROW.y, 176, 28, l + 1, PROGRESS_ARROW.height);
@@ -102,13 +123,23 @@ public class KegScreen extends AbstractContainerScreen<KegContainer>
 			this.blit(ms, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
 		}
 		if (temp < -8) {
+			this.blit(ms, this.leftPos + COLD_BAR.x, this.topPos + COLD_BAR.y, 182, 0, COLD_BAR.width, COLD_BAR.height);
 			this.blit(ms, this.leftPos + FRIGID_BAR.x, this.topPos + FRIGID_BAR.y, 176, 0, FRIGID_BAR.width, FRIGID_BAR.height);
 		}
 		if (temp > 4 && temp < 9) {
 			this.blit(ms, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
 		}
 		if (temp > 8) {
+			this.blit(ms, this.leftPos + WARM_BAR.x, this.topPos + WARM_BAR.y, 195, 0, WARM_BAR.width, WARM_BAR.height);
 			this.blit(ms, this.leftPos + HOT_BAR.x, this.topPos + HOT_BAR.y, 202, 0, HOT_BAR.width, HOT_BAR.height);
+		}
+		
+		int i = this.menu.getFermentingTicks();
+		if (i > 0) {
+			int j;
+			j = BUBBLELENGTHS[i / 5 % 7];
+			this.blit(ms, this.leftPos + BUBBLE_1.x, this.topPos + BUBBLE_1.y, 176, 4, BUBBLE_1.width, BUBBLE_1.height - j);
+			this.blit(ms, this.leftPos + BUBBLE_2.x, this.topPos + BUBBLE_2.y, 186, 4, BUBBLE_2.width, BUBBLE_2.height - j);
 		}
 	}
 }

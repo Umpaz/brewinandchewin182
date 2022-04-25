@@ -10,20 +10,22 @@ import com.brewinandchewin.common.crafting.KegRecipe;
 import com.brewinandchewin.core.registry.BCBlockEntityTypes;
 import com.brewinandchewin.core.registry.BCBlocks;
 import com.brewinandchewin.core.registry.BCContainerTypes;
+import com.brewinandchewin.core.registry.BCEffects;
 import com.brewinandchewin.core.registry.BCItems;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.event.entity.living.LivingHealEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import vectorwing.farmersdelight.common.crafting.CuttingBoardRecipe;
-import vectorwing.farmersdelight.common.registry.ModBlocks;
 
 @Mod(BrewinAndChewin.MODID)
 @Mod.EventBusSubscriber(modid = BrewinAndChewin.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -34,7 +36,7 @@ public class BrewinAndChewin
 		@Nonnull
 		@Override
 		public ItemStack makeIcon() {
-			return new ItemStack(ModBlocks.STOVE.get());
+			return new ItemStack(BCBlocks.KEG.get());
 		}
 	};
 		
@@ -55,9 +57,24 @@ public class BrewinAndChewin
 		BCBlocks.BLOCKS.register(modEventBus);
 		BCBlockEntityTypes.TILES.register(modEventBus);
 		BCContainerTypes.CONTAINER_TYPES.register(modEventBus);
-
+		BCEffects.EFFECTS.register(modEventBus);
+		
 		MinecraftForge.EVENT_BUS.register(this);
 	}
+	
+	@Mod.EventBusSubscriber
+	public static class Events {
+
+		@SubscribeEvent
+		public static void preventNaturalHealing(final LivingHealEvent event) {
+			LivingEntity entity = event.getEntityLiving();
+			if (entity.hasEffect(BCEffects.SWEET_HEART.get())) {
+				event.setAmount(event.getAmount() + 
+				(0.5F + (0.5F * entity.getEffect(BCEffects.SWEET_HEART.get()).getAmplifier())));
+			}
+		}
+	}
+		
 
 	private void registerRecipeSerializers(RegistryEvent.Register<RecipeSerializer<?>> event) {
 

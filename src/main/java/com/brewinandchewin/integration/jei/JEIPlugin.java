@@ -5,7 +5,12 @@ import java.util.stream.Collectors;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.brewinandchewin.client.gui.KegScreen;
+import com.brewinandchewin.common.block.entity.container.KegContainer;
+import com.brewinandchewin.common.crafting.KegRecipe;
 import com.brewinandchewin.core.BrewinAndChewin;
+import com.brewinandchewin.core.registry.BCItems;
+import com.brewinandchewin.integration.jei.category.FermentingRecipeCategory;
 
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -17,11 +22,9 @@ import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
-import vectorwing.farmersdelight.integration.jei.category.CookingRecipeCategory;
-import vectorwing.farmersdelight.integration.jei.category.CuttingRecipeCategory;
-import vectorwing.farmersdelight.integration.jei.category.DecompositionRecipeCategory;
 
 @JeiPlugin
 @ParametersAreNonnullByDefault
@@ -43,27 +46,27 @@ public class JEIPlugin implements IModPlugin
 
 	@Override
 	public void registerCategories(IRecipeCategoryRegistration registry) {
-	//	registry.addRecipeCategories(new CookingRecipeCategory(registry.getJeiHelpers().getGuiHelper()));
+		registry.addRecipeCategories(new FermentingRecipeCategory(registry.getJeiHelpers().getGuiHelper()));
 	}
 
 	@Override
 	public void registerRecipes(IRecipeRegistration registration) {
-		//registration.addRecipes(findRecipesByType(CookingPotRecipe.TYPE), CookingRecipeCategory.UID);
+		registration.addRecipes(findRecipesByType(KegRecipe.TYPE), FermentingRecipeCategory.UID);
 	}
 
 	@Override
 	public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-		//registration.addRecipeCatalyst(new ItemStack(ModItems.COOKING_POT.get()), FDRecipeTypes.COOKING);
+		registration.addRecipeCatalyst(new ItemStack(BCItems.KEG.get()), BCRecipeTypes.FERMENTING);
 	}
 
 	@Override
 	public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-		//registration.addRecipeClickArea(CookingPotScreen.class, 89, 25, 24, 17, FDRecipeTypes.COOKING);
+		registration.addRecipeClickArea(KegScreen.class, 78, 45, 31, 7, BCRecipeTypes.FERMENTING);
 	}
 
 	@Override
 	public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-		//registration.addRecipeTransferHandler(CookingPotContainer.class, FDRecipeTypes.COOKING, 0, 6, 9, 36);
+		//registration.addRecipeTransferHandler(KegContainer.class, BCRecipeTypes.FERMENTING, 0, 5, 7, 36);
 	}
 
 	@Override
