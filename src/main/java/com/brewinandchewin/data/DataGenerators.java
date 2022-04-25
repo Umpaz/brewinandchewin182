@@ -18,6 +18,7 @@ public class DataGenerators
 		ExistingFileHelper helper = event.getExistingFileHelper();
 		if (event.includeServer()) {
 			generator.addProvider(new Recipes(generator));
+			generator.addProvider(new Lang(generator));
 		}
 	}
 }
